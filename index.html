@@ -302,6 +302,97 @@
       from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+
+    /* ── Stat clickable ── */
+    .stat-clickable { cursor: pointer; }
+    .stat-clickable:hover { border-color: var(--indigo) !important; box-shadow: 0 6px 20px rgba(99,102,241,0.18) !important; }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(30,27,74,0.4);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: #fff; border-radius: 20px;
+      padding: 1.8rem 1.8rem 1.4rem;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 20px 60px rgba(99,102,241,0.18), 0 4px 16px rgba(0,0,0,0.08);
+      border: 1.5px solid rgba(99,102,241,0.12);
+      transform: translateY(16px) scale(0.97);
+      transition: transform 0.25s ease;
+      max-height: 75vh; display: flex; flex-direction: column;
+    }
+    .modal-overlay.show .modal { transform: translateY(0) scale(1); }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.9rem; flex-shrink: 0;
+    }
+    .modal-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1rem; font-weight: 700; color: var(--text);
+    }
+    .modal-close {
+      background: #f1f5f9; border: none; border-radius: 8px;
+      width: 28px; height: 28px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 0.9rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .modal-close:hover { background: #fef2f2; color: var(--danger); }
+
+    .modal-count {
+      font-size: 0.74rem; color: var(--muted);
+      padding-bottom: 0.8rem; margin-bottom: 0.5rem;
+      border-bottom: 1.5px solid var(--border); flex-shrink: 0;
+    }
+    .modal-count span {
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--indigo), var(--violet));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .member-list { overflow-y: auto; flex: 1; padding-right: 2px; }
+
+    .member-item {
+      display: flex; align-items: center; gap: 11px;
+      padding: 0.65rem 0.4rem;
+      border-bottom: 1px solid #f1f5f9;
+      border-radius: 10px;
+      transition: background 0.15s;
+    }
+    .member-item:last-child { border-bottom: none; }
+    .member-item:hover { background: #f8f7ff; }
+
+    .member-av {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: 700; color: #fff;
+    }
+    .av-0 { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .av-1 { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+    .av-2 { background: linear-gradient(135deg, #38bdf8, #6366f1); }
+    .av-3 { background: linear-gradient(135deg, #10b981, #38bdf8); }
+    .av-4 { background: linear-gradient(135deg, #f59e0b, #ec4899); }
+
+    .member-info { flex: 1; min-width: 0; }
+    .member-name  { font-size: 0.86rem; font-weight: 600; color: var(--text); }
+    .member-email { font-size: 0.73rem; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .member-badge {
+      font-size: 0.63rem; font-weight: 600; flex-shrink: 0;
+      background: #f0fdf4; color: #166534;
+      border: 1px solid #bbf7d0; border-radius: 20px; padding: 2px 8px;
+    }
+
+    .modal-empty { text-align: center; padding: 2rem 1rem; color: var(--muted); font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -437,7 +528,7 @@
       <p class="dash-sub">ยินดีต้อนรับสู่ระบบ QA Workshop 🎉</p>
 
       <div class="dash-grid">
-        <div class="stat">
+        <div class="stat stat-clickable" onclick="openModal()">
           <div class="stat-n" id="stat-total">0</div>
           <div class="stat-l">สมาชิกทั้งหมด</div>
         </div>
@@ -455,8 +546,21 @@
     </div>
   </div>
 
+  <!-- ══ MODAL: Member List ══════════════════════════ -->
+  <div class="modal-overlay" id="modal-members" onclick="closeModalOutside(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">รายชื่อสมาชิก</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-count">สมาชิกทั้งหมด <span id="modal-count-num">0</span> คน</div>
+      <div class="member-list" id="member-list"></div>
+    </div>
+  </div>
+
 <script>
-  const users = [];
+  let users = JSON.parse(localStorage.getItem('qa_users') || '[]');
+  function saveUsers() { localStorage.setItem('qa_users', JSON.stringify(users)); }
   let me = null;
 
   function show(id) {
@@ -534,6 +638,9 @@
     const user = users.find(u => u.email === email && u.password === pw);
     if (!user) { setAlert('login-alert','อีเมลหรือรหัสผ่านไม่ถูกต้อง','error'); return; }
     me = user;
+    // BUG: push user again every login → duplicate members accumulate
+    users.push({ fname: user.fname, lname: user.lname, email: user.email, password: user.password });
+    saveUsers();
     document.getElementById('dash-name').textContent = `${user.fname} ${user.lname}`;
     document.getElementById('dash-av').textContent = user.fname[0].toUpperCase();
     document.getElementById('stat-total').textContent = users.length;
@@ -561,11 +668,40 @@
     if (!ok) return;
     if (users.find(u => u.email === email)) { setAlert('signup-alert','อีเมลนี้ถูกใช้งานแล้ว','error'); return; }
     users.push({ fname, lname, email, password: pw });
+    saveUsers();
     setAlert('signup-ok', `สมัครสมาชิกสำเร็จ — ยินดีต้อนรับ ${fname} ${lname}`, 'success');
     setTimeout(() => { show('page-login'); }, 1600);
   }
 
   function doLogout() { me = null; show('page-login'); }
+
+  function openModal() {
+    const list = document.getElementById('member-list');
+    document.getElementById('modal-count-num').textContent = users.length;
+    if (users.length === 0) {
+      list.innerHTML = '<div class="modal-empty">ยังไม่มีสมาชิก</div>';
+    } else {
+      list.innerHTML = users.map((u, i) => `
+        <div class="member-item">
+          <div class="member-av av-${i % 5}">${u.fname[0].toUpperCase()}</div>
+          <div class="member-info">
+            <div class="member-name">${u.fname} ${u.lname}</div>
+            <div class="member-email">${u.email}</div>
+          </div>
+          <div class="member-badge">สมาชิก</div>
+        </div>
+      `).join('');
+    }
+    document.getElementById('modal-members').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-members').classList.remove('show');
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('modal-members')) closeModal();
+  }
 
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
