@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QA Workshop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --indigo: #6366f1;
+      --violet: #8b5cf6;
+      --pink:   #ec4899;
+      --sky:    #38bdf8;
+      --emerald:#10b981;
+      --amber:  #f59e0b;
+      --danger: #ef4444;
+      --text:   #1e1b4b;
+      --muted:  #94a3b8;
+      --border: #e2e8f0;
+      --bg:     #f1f5fd;
+      --surface:#ffffff;
+    }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      /* Soft colorful background blobs */
+      background-image:
+        radial-gradient(ellipse 600px 400px at 10% 20%, rgba(99,102,241,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 400px at 90% 80%, rgba(236,72,153,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 300px at 60% 10%, rgba(56,189,248,0.10) 0%, transparent 70%);
+    }
+
+    /* ── Pages ── */
+    .page {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      transition: opacity 0.35s cubic-bezier(.4,0,.2,1), transform 0.35s cubic-bezier(.4,0,.2,1);
+    }
+    .page.hidden { opacity: 0; pointer-events: none; transform: translateY(18px) scale(0.98); }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 2.4rem 2.2rem;
+      width: 100%; max-width: 420px;
+      box-shadow:
+        0 4px 6px rgba(99,102,241,0.04),
+        0 10px 40px rgba(99,102,241,0.10),
+        0 30px 60px rgba(99,102,241,0.06);
+      border: 1px solid rgba(99,102,241,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Colorful top strip */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--indigo), var(--violet), var(--pink), var(--sky));
+      border-radius: 24px 24px 0 0;
+    }
+
+    /* ── Header ── */
+    .card-logo {
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--indigo), var(--violet));
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.4rem;
+      box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+    }
+    .card-logo svg { width: 22px; height: 22px; color: #fff; }
+
+    h1 {
+      font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif;
+      font-size: 1.55rem; font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle { font-size: 0.875rem; color: var(--muted); font-weight: 400; margin-bottom: 1.8rem; }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 1.1rem; }
+    label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      color: #64748b; margin-bottom: 0.38rem; letter-spacing: 0.02em;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.68rem 0.95rem;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #f8faff;
+      color: var(--text);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    }
+    input:focus {
+      border-color: var(--indigo);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+    }
+    input.error { border-color: var(--danger); }
+    input.error:focus { box-shadow: 0 0 0 4px rgba(239,68,68,0.12); }
+
+    /* ── Eye icon toggle ── */
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 2.9rem; }
+
+    .pw-toggle {
+      position: absolute;
+      right: 0.75rem; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; padding: 4px;
+      cursor: pointer; border-radius: 8px;
+      color: #cbd5e1;
+      transition: color 0.18s, background 0.18s;
+      display: flex; align-items: center;
+    }
+    .pw-toggle:hover {
+      color: var(--indigo);
+      background: rgba(99,102,241,0.08);
+    }
+    .pw-toggle svg { width: 18px; height: 18px; display: block; }
+
+    /* single icon path swap via class */
+    .pw-toggle .line-through { display: none; }
+    .pw-toggle.visible .line-through { display: block; }
+    .pw-toggle.visible .eye-pupil { display: none; }
+
+    /* ── Error text ── */
+    .err {
+      font-size: 0.73rem; color: var(--danger);
+      margin-top: 0.3rem; display: none;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .err::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+    .err { display: none; }
+    .err.show { display: flex; }
+
+    /* ── Alert ── */
+    .alert {
+      font-size: 0.8rem; padding: 0.75rem 1rem;
+      border-radius: 12px; margin-bottom: 1.2rem;
+      display: none; line-height: 1.55;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .alert { display: none; }
+    .alert.show { display: flex; }
+    .alert-error   { background: #fff1f2; border: 1.5px solid #fecdd3; color: #be123c; }
+    .alert-success { background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534; }
+
+    /* ── Password strength ── */
+    .strength-track { display: flex; gap: 4px; margin-top: 7px; height: 4px; }
+    .seg { flex: 1; border-radius: 4px; background: #e2e8f0; transition: background 0.3s; }
+    .seg.weak   { background: var(--danger); }
+    .seg.medium { background: var(--amber); }
+    .seg.strong { background: var(--emerald); }
+
+    /* ── Consent ── */
+    .consent-box {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 0.9rem 1rem;
+      border: 1.5px solid var(--border); border-radius: 12px;
+      margin-bottom: 1.1rem; cursor: pointer;
+      background: #f8faff;
+      transition: border-color 0.18s, background 0.18s;
+    }
+    .consent-box:hover { border-color: var(--indigo); background: #f5f3ff; }
+    .consent-box input[type="checkbox"] {
+      width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0;
+      accent-color: var(--indigo); cursor: pointer;
+    }
+    .consent-label { font-size: 0.81rem; color: var(--muted); line-height: 1.55; }
+    .consent-label strong { color: var(--text); font-weight: 600; }
+
+    /* ── Button ── */
+    .btn {
+      width: 100%; padding: 0.78rem; border-radius: 12px;
+      font-family: 'Sarabun', sans-serif; font-size: 0.97rem; font-weight: 600;
+      cursor: pointer; border: none;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:active { transform: scale(0.99) translateY(0); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 22px rgba(99,102,241,0.45); }
+
+    /* ── Footer link ── */
+    .foot { text-align: center; margin-top: 1.2rem; font-size: 0.84rem; color: var(--muted); }
+    .link-btn {
+      background: none; border: none; font-family: 'Sarabun', sans-serif;
+      font-size: 0.84rem; font-weight: 600; cursor: pointer;
+      background: linear-gradient(90deg, var(--indigo), var(--pink));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .link-btn:hover { opacity: 0.75; }
+
+    /* ── Two-col ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+    /* Signup scroll */
+    #page-signup .card { max-height: 92vh; overflow-y: auto; scrollbar-width: thin; }
+
+    /* ── Divider ── */
+    .divider { display: flex; align-items: center; gap: 8px; margin: 1rem 0; }
+    .divider span { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ══════════════════════════════
+       DASHBOARD
+    ══════════════════════════════ */
+    #page-dashboard .card { max-width: 520px; padding: 2.6rem 2.4rem; }
+
+    .dash-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #f5f3ff, #fdf4ff);
+      border: 1.5px solid rgba(99,102,241,0.2);
+      border-radius: 30px; padding: 5px 14px 5px 6px;
+      margin-bottom: 1.8rem;
+      animation: up 0.5s ease both;
+    }
+    .dash-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--indigo), var(--pink));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; color: #fff;
+    }
+    .dash-chip-name { font-size: 0.82rem; font-weight: 600; color: var(--indigo); }
+
+    .dash-hello {
+      font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif;
+      font-size: 2.8rem; font-weight: 700;
+      letter-spacing: -0.03em; line-height: 1;
+      background: linear-gradient(135deg, var(--indigo), var(--violet), var(--pink));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+      animation: up 0.5s 0.05s ease both;
+    }
+    .dash-sub {
+      font-size: 0.9rem; color: var(--muted); font-weight: 400;
+      animation: up 0.5s 0.1s ease both;
+    }
+
+    .dash-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 0.8rem; margin: 2rem 0;
+      animation: up 0.5s 0.15s ease both;
+    }
+    .stat {
+      border-radius: 16px; padding: 1rem 0.9rem;
+      border: 1.5px solid var(--border);
+      background: linear-gradient(135deg, #fafbff, #f5f3ff08);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,102,241,0.1); }
+    .stat-n {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.5rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--indigo), var(--violet));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-l { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+    .btn-logout {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--muted); font-family: 'Sarabun', sans-serif;
+      font-size: 0.85rem; font-weight: 500;
+      padding: 0.55rem 1.2rem; border-radius: 10px;
+      cursor: pointer; transition: all 0.18s;
+      animation: up 0.5s 0.2s ease both;
+    }
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); background: #fff1f2; }
+
+    @keyframes up {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ LOGIN ══════════════════════════════════════ -->
+  <div class="page" id="page-login">
+    <div class="card">
+      <div class="card-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h1>เข้าสู่ระบบ</h1>
+      <p class="subtitle">ยินดีต้อนรับกลับ กรอกข้อมูลเพื่อเข้าใช้งาน</p>
+
+      <div class="alert alert-error" id="login-alert"></div>
+
+      <div class="field">
+        <label>อีเมล</label>
+        <input type="email" id="login-email" placeholder="name@email.com"/>
+        <div class="err" id="e-lemail">กรุณากรอกอีเมลให้ถูกต้อง</div>
+      </div>
+      <div class="field">
+        <label>รหัสผ่าน</label>
+        <div class="pw-wrap">
+          <input type="password" id="login-pw" placeholder="••••••••"/>
+          <button class="pw-toggle" onclick="togglePw('login-pw',this)" type="button" tabindex="-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse class="eye-shape" cx="12" cy="12" rx="10" ry="6"/>
+              <circle class="eye-pupil" cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
+              <line class="line-through" x1="3" y1="3" x2="21" y2="21"/>
+            </svg>
+          </button>
+        </div>
+        <div class="err" id="e-lpw">กรุณากรอกรหัสผ่าน</div>
+      </div>
+
+      <button class="btn btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <div class="foot">ยังไม่มีบัญชี? <button class="link-btn" onclick="show('page-signup')">สมัครสมาชิก</button></div>
+    </div>
+  </div>
+
+  <!-- ══ SIGNUP ══════════════════════════════════════ -->
+  <div class="page hidden" id="page-signup">
+    <div class="card">
+      <div class="card-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+        </svg>
+      </div>
+      <h1>สมัครสมาชิก</h1>
+      <p class="subtitle">กรอกข้อมูลเพื่อสร้างบัญชีใหม่</p>
+
+      <div class="alert alert-error"   id="signup-alert"></div>
+      <div class="alert alert-success" id="signup-ok"></div>
+
+      <div class="two-col">
+        <div class="field">
+          <label>ชื่อ</label>
+          <input type="text" id="su-fname" placeholder="ชื่อจริง"/>
+          <div class="err" id="e-fname">กรุณากรอกชื่อ</div>
+        </div>
+        <div class="field">
+          <label>นามสกุล</label>
+          <input type="text" id="su-lname" placeholder="นามสกุล"/>
+          <div class="err" id="e-lname">กรุณากรอกนามสกุล</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>อีเมล</label>
+        <input type="email" id="su-email" placeholder="name@email.com"/>
+        <div class="err" id="e-semail">กรุณากรอกอีเมลให้ถูกต้อง</div>
+      </div>
+
+      <div class="field">
+        <label>รหัสผ่าน</label>
+        <div class="pw-wrap">
+          <input type="password" id="su-pw" placeholder="อย่างน้อย 6 ตัวอักษร" oninput="checkStrength(this.value)"/>
+          <button class="pw-toggle" onclick="togglePw('su-pw',this)" type="button" tabindex="-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse class="eye-shape" cx="12" cy="12" rx="10" ry="6"/>
+              <circle class="eye-pupil" cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
+              <line class="line-through" x1="3" y1="3" x2="21" y2="21"/>
+            </svg>
+          </button>
+        </div>
+        <div class="strength-track">
+          <div class="seg" id="s1"></div><div class="seg" id="s2"></div>
+          <div class="seg" id="s3"></div><div class="seg" id="s4"></div>
+        </div>
+        <div class="err" id="e-spw">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</div>
+      </div>
+
+      <div class="field">
+        <label>ยืนยันรหัสผ่าน</label>
+        <div class="pw-wrap">
+          <input type="password" id="su-cpw" placeholder="กรอกรหัสผ่านอีกครั้ง"/>
+          <button class="pw-toggle" onclick="togglePw('su-cpw',this)" type="button" tabindex="-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse class="eye-shape" cx="12" cy="12" rx="10" ry="6"/>
+              <circle class="eye-pupil" cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
+              <line class="line-through" x1="3" y1="3" x2="21" y2="21"/>
+            </svg>
+          </button>
+        </div>
+        <div class="err" id="e-cpw">รหัสผ่านไม่ตรงกัน</div>
+      </div>
+
+      <div class="consent-box" onclick="toggleConsent()">
+        <input type="checkbox" id="su-consent" onclick="event.stopPropagation(); toggleConsent()"/>
+        <div class="consent-label">
+          <strong>ยินยอมให้ใช้ข้อมูลส่วนบุคคล</strong><br/>
+          ข้าพเจ้ายินยอมให้จัดเก็บและใช้ข้อมูลส่วนบุคคลตามนโยบายความเป็นส่วนตัว
+        </div>
+      </div>
+      <div class="err" id="e-consent">กรุณายอมรับเงื่อนไขการใช้งาน</div>
+
+      <button class="btn btn-primary" onclick="doSignup()">สมัครสมาชิก</button>
+      <div class="foot">มีบัญชีอยู่แล้ว? <button class="link-btn" onclick="show('page-login')">เข้าสู่ระบบ</button></div>
+    </div>
+  </div>
+
+  <!-- ══ DASHBOARD ══════════════════════════════════ -->
+  <div class="page hidden" id="page-dashboard">
+    <div class="card">
+      <div class="dash-chip">
+        <div class="dash-avatar" id="dash-av">U</div>
+        <span class="dash-chip-name" id="dash-name">User</span>
+      </div>
+      <div class="dash-hello">Hello All!</div>
+      <p class="dash-sub">ยินดีต้อนรับสู่ระบบ QA Workshop 🎉</p>
+
+      <div class="dash-grid">
+        <div class="stat">
+          <div class="stat-n" id="stat-total">0</div>
+          <div class="stat-l">สมาชิกทั้งหมด</div>
+        </div>
+        <div class="stat">
+          <div class="stat-n">✓</div>
+          <div class="stat-l">Login สำเร็จ</div>
+        </div>
+        <div class="stat">
+          <div class="stat-n">QA</div>
+          <div class="stat-l">Workshop</div>
+        </div>
+      </div>
+
+      <button class="btn-logout" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+<script>
+  const users = [];
+  let me = null;
+
+  function show(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    const target = document.getElementById(id);
+    target.classList.remove('hidden');
+    // clear alerts & errors
+    target.querySelectorAll('.alert').forEach(a => { a.classList.remove('show'); a.textContent = ''; });
+    target.querySelectorAll('.err').forEach(e => e.classList.remove('show'));
+    // clear all input values and error states
+    target.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]').forEach(i => {
+      i.value = '';
+      i.classList.remove('error');
+    });
+    // reset checkboxes
+    target.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+    // reset password visibility back to masked + icon state
+    target.querySelectorAll('.pw-wrap input').forEach(i => i.type = 'password');
+    target.querySelectorAll('.pw-toggle').forEach(b => b.classList.remove('visible'));
+    // reset strength bar
+    ['s1','s2','s3','s4'].forEach(sid => {
+      const el = document.getElementById(sid);
+      if (el) el.className = 'seg';
+    });
+  }
+
+  function togglePw(id, btn) {
+    const inp = document.getElementById(id);
+    const showing = inp.type === 'password';
+    inp.type = showing ? 'text' : 'password';
+    btn.classList.toggle('visible', showing);
+  }
+
+  function toggleConsent() {
+    document.getElementById('su-consent').checked = !document.getElementById('su-consent').checked;
+  }
+
+  function checkStrength(pw) {
+    let s = 0;
+    if (pw.length >= 6) s++;
+    if (pw.length >= 10) s++;
+    if (/[A-Z0-9]/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw) && pw.length >= 8) s++;
+    const cls = s <= 1 ? 'weak' : s <= 2 ? 'medium' : 'strong';
+    ['s1','s2','s3','s4'].forEach((sid, i) => {
+      const el = document.getElementById(sid);
+      el.className = 'seg';
+      if (i < s) el.classList.add(cls);
+    });
+  }
+
+  function v(inputId, errId, cond) {
+    document.getElementById(inputId).classList.toggle('error', !cond);
+    document.getElementById(errId).classList.toggle('show', !cond);
+    return cond;
+  }
+
+  function isEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+  function setAlert(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `alert alert-${type} show`;
+  }
+
+  function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pw    = document.getElementById('login-pw').value;
+    document.getElementById('login-alert').classList.remove('show');
+    const ok = [
+      v('login-email','e-lemail', isEmail(email)),
+      v('login-pw','e-lpw', pw.length > 0)
+    ].every(Boolean);
+    if (!ok) return;
+    const user = users.find(u => u.email === email && u.password === pw);
+    if (!user) { setAlert('login-alert','อีเมลหรือรหัสผ่านไม่ถูกต้อง','error'); return; }
+    me = user;
+    document.getElementById('dash-name').textContent = `${user.fname} ${user.lname}`;
+    document.getElementById('dash-av').textContent = user.fname[0].toUpperCase();
+    document.getElementById('stat-total').textContent = users.length;
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-pw').value = '';
+    show('page-dashboard');
+  }
+
+  function doSignup() {
+    const fname   = document.getElementById('su-fname').value.trim();
+    const lname   = document.getElementById('su-lname').value.trim();
+    const email   = document.getElementById('su-email').value.trim();
+    const pw      = document.getElementById('su-pw').value;
+    const cpw     = document.getElementById('su-cpw').value;
+    const consent = document.getElementById('su-consent').checked;
+    document.getElementById('signup-alert').classList.remove('show');
+    const ok = [
+      v('su-fname','e-fname', fname.length > 0),
+      v('su-lname','e-lname', lname.length > 0),
+      v('su-email','e-semail', isEmail(email)),
+      v('su-pw','e-spw', pw.length >= 6),
+      v('su-cpw','e-cpw', pw === cpw),
+      (() => { document.getElementById('e-consent').classList.toggle('show',!consent); return consent; })()
+    ].every(Boolean);
+    if (!ok) return;
+    if (users.find(u => u.email === email)) { setAlert('signup-alert','อีเมลนี้ถูกใช้งานแล้ว','error'); return; }
+    users.push({ fname, lname, email, password: pw });
+    setAlert('signup-ok', `สมัครสมาชิกสำเร็จ — ยินดีต้อนรับ ${fname} ${lname}`, 'success');
+    setTimeout(() => { show('page-login'); }, 1600);
+  }
+
+  function doLogout() { me = null; show('page-login'); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const cur = document.querySelector('.page:not(.hidden)');
+    if (!cur) return;
+    if (cur.id === 'page-login')  doLogin();
+    if (cur.id === 'page-signup') doSignup();
+  });
+</script>
+</body>
+</html>
